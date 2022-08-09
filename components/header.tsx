@@ -1,0 +1,104 @@
+import { Box, Tabs , Panel, Flex, H1, H4} from '@bigcommerce/big-design';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
+import InnerHeader from './innerHeader';
+import styled from 'styled-components';
+
+export const TabIds = {
+    HOME: 'home',
+    PRODUCTS: 'products',
+    IMPORT: 'import-products',
+    SUBSCRIPTIONS: 'subscriptions',
+    ABOUT: 'about',
+};
+
+export const TabRoutes = {
+    [TabIds.HOME]: '/',
+    [TabIds.PRODUCTS]: '/products',
+    [TabIds.IMPORT]: '/import-products',
+    [TabIds.SUBSCRIPTIONS]: '/subscriptions',
+    [TabIds.ABOUT]: '/about',
+};
+
+const HeaderlessRoutes = [
+    '/orders/[orderId]',
+    '/orders/[orderId]/labels',
+    '/orders/[orderId]/modal',
+];
+
+const InnerRoutes = [
+    '/products/[pid]',
+];
+
+const HeaderTypes = {
+    GLOBAL: 'global',
+    INNER: 'inner',
+    HEADERLESS: 'headerless',
+};
+
+const Header = () => {
+    const [activeTab, setActiveTab] = useState<string>('');
+    const [headerType, setHeaderType] = useState<string>(HeaderTypes.GLOBAL);
+    const router = useRouter();
+    const { pathname } = router;
+
+    useEffect(() => {
+        if (InnerRoutes.includes(pathname)) {
+            // Use InnerHeader if route matches inner routes
+            setHeaderType(HeaderTypes.INNER);
+        } else if (HeaderlessRoutes.includes(pathname)) {
+            setHeaderType(HeaderTypes.HEADERLESS);
+        } else {
+            // Check if new route matches TabRoutes
+            const tabKey = Object.keys(TabRoutes).find(key => TabRoutes[key] === pathname);
+
+            // Set the active tab to tabKey or set no active tab if route doesn't match (404)
+            setActiveTab(tabKey ?? '');
+            setHeaderType(HeaderTypes.GLOBAL);
+        }
+
+    }, [pathname]);
+
+    useEffect(() => {
+        // Prefetch products page to reduce latency (doesn't prefetch in dev)
+        router.prefetch('/products');
+    });
+
+    const items = [
+        { id: TabIds.HOME, title: 'Dashboard' },
+        { id: TabIds.PRODUCTS, title: 'Inventory View' },
+        { id: TabIds.IMPORT, title: 'Inventory Report' },
+        { id: TabIds.SUBSCRIPTIONS, title: 'Subscriptions' },
+    ];
+
+    const handleTabClick = (tabId: string) => {
+        setActiveTab(tabId);
+
+        return router.push(TabRoutes[tabId]);
+    };
+
+    if (headerType === HeaderTypes.HEADERLESS) return null;
+    if (headerType === HeaderTypes.INNER) return <InnerHeader />;
+
+    return (
+        <>
+            <p className='logo-company'>Friends of Commerce</p>
+            <Box marginBottom="xxLarge" className='menu-header'>
+                <div className='logo'>
+                    <p>STOCK ASSISTANT</p>
+                </div>
+                <Tabs
+                    activeTab={activeTab}
+                    items={items}
+                    onTabClick={handleTabClick}
+                />
+            </Box>
+            
+        </>
+    );
+};
+const StyledBox = styled(Box)`
+    min-width: 10rem;
+`;
+
+export default Header;
